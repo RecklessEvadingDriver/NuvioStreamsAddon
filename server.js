@@ -702,6 +702,682 @@ app.get('/api/region-status', (req, res) => {
   res.json(status);
 });
 
+// ===================================================================
+// Provider API Endpoints - Direct access to provider streams
+// ===================================================================
+
+// MoviesDrive API endpoint
+app.get('/api/streams/moviesdrive/:tmdbId', async (req, res) => {
+    try {
+        // Check if provider is enabled
+        const ENABLE_MOVIESDRIVE_PROVIDER = process.env.ENABLE_MOVIESDRIVE_PROVIDER !== 'false';
+        if (!ENABLE_MOVIESDRIVE_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: 'MoviesDrive provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type, season, episode } = req.query;
+
+        // Validate required parameters
+        if (!type || !['movie', 'tv'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'type must be either "movie" or "tv"'
+            });
+        }
+
+        // For TV shows, season and episode are required
+        if (type === 'tv' && (!season || !episode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing season or episode parameter',
+                message: 'season and episode are required for TV shows'
+            });
+        }
+
+        const seasonNum = season ? parseInt(season, 10) : null;
+        const episodeNum = episode ? parseInt(episode, 10) : null;
+
+        // Import and call the provider function
+        const { getMoviesDriveStreams } = require('./providers/moviesdrive.js');
+        console.log(`[API] Fetching MoviesDrive streams for TMDB ID: ${tmdbId}, Type: ${type}`);
+        
+        const streams = await getMoviesDriveStreams(tmdbId, type, seasonNum, episodeNum);
+
+        return res.json({
+            success: true,
+            provider: 'MoviesDrive',
+            tmdbId,
+            type,
+            season: seasonNum,
+            episode: episodeNum,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in MoviesDrive endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// 4KHDHub API endpoint
+app.get('/api/streams/4khdhub/:tmdbId', async (req, res) => {
+    try {
+        const ENABLE_4KHDHUB_PROVIDER = process.env.ENABLE_4KHDHUB_PROVIDER !== 'false';
+        if (!ENABLE_4KHDHUB_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: '4KHDHub provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type, season, episode } = req.query;
+
+        if (!type || !['movie', 'tv'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'type must be either "movie" or "tv"'
+            });
+        }
+
+        if (type === 'tv' && (!season || !episode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing season or episode parameter',
+                message: 'season and episode are required for TV shows'
+            });
+        }
+
+        const seasonNum = season ? parseInt(season, 10) : null;
+        const episodeNum = episode ? parseInt(episode, 10) : null;
+
+        const { get4KHDHubStreams } = require('./providers/4khdhub.js');
+        console.log(`[API] Fetching 4KHDHub streams for TMDB ID: ${tmdbId}, Type: ${type}`);
+        
+        const streams = await get4KHDHubStreams(tmdbId, type, seasonNum, episodeNum);
+
+        return res.json({
+            success: true,
+            provider: '4KHDHub',
+            tmdbId,
+            type,
+            season: seasonNum,
+            episode: episodeNum,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in 4KHDHub endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// UHDMovies API endpoint
+app.get('/api/streams/uhdmovies/:tmdbId', async (req, res) => {
+    try {
+        const ENABLE_UHDMOVIES_PROVIDER = process.env.ENABLE_UHDMOVIES_PROVIDER !== 'false';
+        if (!ENABLE_UHDMOVIES_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: 'UHDMovies provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type, season, episode } = req.query;
+
+        if (!type || !['movie', 'tv'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'type must be either "movie" or "tv"'
+            });
+        }
+
+        if (type === 'tv' && (!season || !episode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing season or episode parameter',
+                message: 'season and episode are required for TV shows'
+            });
+        }
+
+        const seasonNum = season ? parseInt(season, 10) : null;
+        const episodeNum = episode ? parseInt(episode, 10) : null;
+
+        const { getUHDMoviesStreams } = require('./providers/uhdmovies.js');
+        console.log(`[API] Fetching UHDMovies streams for TMDB ID: ${tmdbId}, Type: ${type}`);
+        
+        const streams = await getUHDMoviesStreams(tmdbId, type, seasonNum, episodeNum);
+
+        return res.json({
+            success: true,
+            provider: 'UHDMovies',
+            tmdbId,
+            type,
+            season: seasonNum,
+            episode: episodeNum,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in UHDMovies endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// MoviesMod API endpoint
+app.get('/api/streams/moviesmod/:tmdbId', async (req, res) => {
+    try {
+        const ENABLE_MOVIESMOD_PROVIDER = process.env.ENABLE_MOVIESMOD_PROVIDER !== 'false';
+        if (!ENABLE_MOVIESMOD_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: 'MoviesMod provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type, season, episode } = req.query;
+
+        if (!type || !['movie', 'tv'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'type must be either "movie" or "tv"'
+            });
+        }
+
+        if (type === 'tv' && (!season || !episode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing season or episode parameter',
+                message: 'season and episode are required for TV shows'
+            });
+        }
+
+        const seasonNum = season ? parseInt(season, 10) : null;
+        const episodeNum = episode ? parseInt(episode, 10) : null;
+
+        const { getMoviesModStreams } = require('./providers/moviesmod.js');
+        console.log(`[API] Fetching MoviesMod streams for TMDB ID: ${tmdbId}, Type: ${type}`);
+        
+        const streams = await getMoviesModStreams(tmdbId, type, seasonNum, episodeNum);
+
+        return res.json({
+            success: true,
+            provider: 'MoviesMod',
+            tmdbId,
+            type,
+            season: seasonNum,
+            episode: episodeNum,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in MoviesMod endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// TopMovies API endpoint
+app.get('/api/streams/topmovies/:tmdbId', async (req, res) => {
+    try {
+        const ENABLE_TOPMOVIES_PROVIDER = process.env.ENABLE_TOPMOVIES_PROVIDER !== 'false';
+        if (!ENABLE_TOPMOVIES_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: 'TopMovies provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type } = req.query;
+
+        if (!type || type !== 'movie') {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'TopMovies only supports movies (type=movie)'
+            });
+        }
+
+        const { getTopMoviesStreams } = require('./providers/topmovies.js');
+        console.log(`[API] Fetching TopMovies streams for TMDB ID: ${tmdbId}`);
+        
+        const streams = await getTopMoviesStreams(tmdbId, type);
+
+        return res.json({
+            success: true,
+            provider: 'TopMovies',
+            tmdbId,
+            type,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in TopMovies endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// SoaperTV API endpoint
+app.get('/api/streams/soapertv/:tmdbId', async (req, res) => {
+    try {
+        const ENABLE_SOAPERTV_PROVIDER = process.env.ENABLE_SOAPERTV_PROVIDER !== 'false';
+        if (!ENABLE_SOAPERTV_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: 'SoaperTV provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type, season, episode } = req.query;
+
+        if (!type || !['movie', 'tv'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'type must be either "movie" or "tv"'
+            });
+        }
+
+        if (type === 'tv' && (!season || !episode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing season or episode parameter',
+                message: 'season and episode are required for TV shows'
+            });
+        }
+
+        const seasonNum = season ? parseInt(season, 10) : null;
+        const episodeNum = episode ? parseInt(episode, 10) : null;
+
+        const { getSoaperTvStreams } = require('./providers/soapertv.js');
+        console.log(`[API] Fetching SoaperTV streams for TMDB ID: ${tmdbId}, Type: ${type}`);
+        
+        const streams = await getSoaperTvStreams(tmdbId, type, seasonNum, episodeNum);
+
+        return res.json({
+            success: true,
+            provider: 'SoaperTV',
+            tmdbId,
+            type,
+            season: seasonNum,
+            episode: episodeNum,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in SoaperTV endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// VidZee API endpoint
+app.get('/api/streams/vidzee/:tmdbId', async (req, res) => {
+    try {
+        const ENABLE_VIDZEE_PROVIDER = process.env.ENABLE_VIDZEE_PROVIDER !== 'false';
+        if (!ENABLE_VIDZEE_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: 'VidZee provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type, season, episode } = req.query;
+
+        if (!type || !['movie', 'tv'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'type must be either "movie" or "tv"'
+            });
+        }
+
+        if (type === 'tv' && (!season || !episode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing season or episode parameter',
+                message: 'season and episode are required for TV shows'
+            });
+        }
+
+        const seasonNum = season ? parseInt(season, 10) : null;
+        const episodeNum = episode ? parseInt(episode, 10) : null;
+
+        const { getVidZeeStreams } = require('./providers/VidZee.js');
+        console.log(`[API] Fetching VidZee streams for TMDB ID: ${tmdbId}, Type: ${type}`);
+        
+        const streams = await getVidZeeStreams(tmdbId, type, seasonNum, episodeNum);
+
+        return res.json({
+            success: true,
+            provider: 'VidZee',
+            tmdbId,
+            type,
+            season: seasonNum,
+            episode: episodeNum,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in VidZee endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// MP4Hydra API endpoint
+app.get('/api/streams/mp4hydra/:tmdbId', async (req, res) => {
+    try {
+        const ENABLE_MP4HYDRA_PROVIDER = process.env.ENABLE_MP4HYDRA_PROVIDER !== 'false';
+        if (!ENABLE_MP4HYDRA_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: 'MP4Hydra provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type, season, episode } = req.query;
+
+        if (!type || !['movie', 'tv'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'type must be either "movie" or "tv"'
+            });
+        }
+
+        if (type === 'tv' && (!season || !episode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing season or episode parameter',
+                message: 'season and episode are required for TV shows'
+            });
+        }
+
+        const seasonNum = season ? parseInt(season, 10) : null;
+        const episodeNum = episode ? parseInt(episode, 10) : null;
+
+        const { getMP4HydraStreams } = require('./providers/MP4Hydra.js');
+        console.log(`[API] Fetching MP4Hydra streams for TMDB ID: ${tmdbId}, Type: ${type}`);
+        
+        const streams = await getMP4HydraStreams(tmdbId, type, seasonNum, episodeNum);
+
+        return res.json({
+            success: true,
+            provider: 'MP4Hydra',
+            tmdbId,
+            type,
+            season: seasonNum,
+            episode: episodeNum,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in MP4Hydra endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// Vixsrc API endpoint
+app.get('/api/streams/vixsrc/:tmdbId', async (req, res) => {
+    try {
+        const ENABLE_VIXSRC_PROVIDER = process.env.ENABLE_VIXSRC_PROVIDER !== 'false';
+        if (!ENABLE_VIXSRC_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: 'Vixsrc provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type, season, episode } = req.query;
+
+        if (!type || !['movie', 'tv'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'type must be either "movie" or "tv"'
+            });
+        }
+
+        if (type === 'tv' && (!season || !episode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing season or episode parameter',
+                message: 'season and episode are required for TV shows'
+            });
+        }
+
+        const seasonNum = season ? parseInt(season, 10) : null;
+        const episodeNum = episode ? parseInt(episode, 10) : null;
+
+        const { getVixsrcStreams } = require('./providers/vixsrc.js');
+        console.log(`[API] Fetching Vixsrc streams for TMDB ID: ${tmdbId}, Type: ${type}`);
+        
+        const streams = await getVixsrcStreams(tmdbId, type, seasonNum, episodeNum);
+
+        return res.json({
+            success: true,
+            provider: 'Vixsrc',
+            tmdbId,
+            type,
+            season: seasonNum,
+            episode: episodeNum,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in Vixsrc endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// MovieBox API endpoint
+app.get('/api/streams/moviebox/:tmdbId', async (req, res) => {
+    try {
+        const ENABLE_MOVIEBOX_PROVIDER = process.env.ENABLE_MOVIEBOX_PROVIDER !== 'false';
+        if (!ENABLE_MOVIEBOX_PROVIDER) {
+            return res.status(403).json({
+                success: false,
+                error: 'MovieBox provider is disabled',
+                message: 'This provider is not enabled in the server configuration'
+            });
+        }
+
+        const { tmdbId } = req.params;
+        const { type, season, episode } = req.query;
+
+        if (!type || !['movie', 'tv'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid or missing type parameter',
+                message: 'type must be either "movie" or "tv"'
+            });
+        }
+
+        if (type === 'tv' && (!season || !episode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing season or episode parameter',
+                message: 'season and episode are required for TV shows'
+            });
+        }
+
+        const seasonNum = season ? parseInt(season, 10) : null;
+        const episodeNum = episode ? parseInt(episode, 10) : null;
+
+        const { getMovieBoxStreams } = require('./providers/moviebox.js');
+        console.log(`[API] Fetching MovieBox streams for TMDB ID: ${tmdbId}, Type: ${type}`);
+        
+        const streams = await getMovieBoxStreams(tmdbId, type, seasonNum, episodeNum);
+
+        return res.json({
+            success: true,
+            provider: 'MovieBox',
+            tmdbId,
+            type,
+            season: seasonNum,
+            episode: episodeNum,
+            count: streams.length,
+            streams: streams
+        });
+
+    } catch (error) {
+        console.error('[API] Error in MovieBox endpoint:', error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// List all available providers endpoint
+app.get('/api/providers', (req, res) => {
+    const providers = {
+        moviesdrive: {
+            enabled: process.env.ENABLE_MOVIESDRIVE_PROVIDER !== 'false',
+            name: 'MoviesDrive',
+            endpoint: '/api/streams/moviesdrive/:tmdbId',
+            supports: ['movie', 'tv']
+        },
+        '4khdhub': {
+            enabled: process.env.ENABLE_4KHDHUB_PROVIDER !== 'false',
+            name: '4KHDHub',
+            endpoint: '/api/streams/4khdhub/:tmdbId',
+            supports: ['movie', 'tv']
+        },
+        uhdmovies: {
+            enabled: process.env.ENABLE_UHDMOVIES_PROVIDER !== 'false',
+            name: 'UHDMovies',
+            endpoint: '/api/streams/uhdmovies/:tmdbId',
+            supports: ['movie', 'tv']
+        },
+        moviesmod: {
+            enabled: process.env.ENABLE_MOVIESMOD_PROVIDER !== 'false',
+            name: 'MoviesMod',
+            endpoint: '/api/streams/moviesmod/:tmdbId',
+            supports: ['movie', 'tv']
+        },
+        topmovies: {
+            enabled: process.env.ENABLE_TOPMOVIES_PROVIDER !== 'false',
+            name: 'TopMovies',
+            endpoint: '/api/streams/topmovies/:tmdbId',
+            supports: ['movie']
+        },
+        soapertv: {
+            enabled: process.env.ENABLE_SOAPERTV_PROVIDER !== 'false',
+            name: 'SoaperTV',
+            endpoint: '/api/streams/soapertv/:tmdbId',
+            supports: ['movie', 'tv']
+        },
+        vidzee: {
+            enabled: process.env.ENABLE_VIDZEE_PROVIDER !== 'false',
+            name: 'VidZee',
+            endpoint: '/api/streams/vidzee/:tmdbId',
+            supports: ['movie', 'tv']
+        },
+        mp4hydra: {
+            enabled: process.env.ENABLE_MP4HYDRA_PROVIDER !== 'false',
+            name: 'MP4Hydra',
+            endpoint: '/api/streams/mp4hydra/:tmdbId',
+            supports: ['movie', 'tv']
+        },
+        vixsrc: {
+            enabled: process.env.ENABLE_VIXSRC_PROVIDER !== 'false',
+            name: 'Vixsrc',
+            endpoint: '/api/streams/vixsrc/:tmdbId',
+            supports: ['movie', 'tv']
+        },
+        moviebox: {
+            enabled: process.env.ENABLE_MOVIEBOX_PROVIDER !== 'false',
+            name: 'MovieBox',
+            endpoint: '/api/streams/moviebox/:tmdbId',
+            supports: ['movie', 'tv']
+        }
+    };
+
+    const enabledProviders = Object.entries(providers)
+        .filter(([_, config]) => config.enabled)
+        .reduce((acc, [key, config]) => {
+            acc[key] = config;
+            return acc;
+        }, {});
+
+    res.json({
+        success: true,
+        totalProviders: Object.keys(providers).length,
+        enabledCount: Object.keys(enabledProviders).length,
+        providers: providers,
+        enabledProviders: enabledProviders
+    });
+});
+
 const PORT = process.env.PORT || 7777;
 
 app.listen(PORT, () => {
@@ -712,4 +1388,8 @@ app.listen(PORT, () => {
     console.log(`To generate a personalized manifest, append ?cookie=YOUR_URL_ENCODED_COOKIE to the manifest URL.`);
     console.log(`Example: http://localhost:${PORT}/manifest.json?cookie=ui%3Dyourcookievalue`);
     console.log(`Install example: stremio://localhost:${PORT}/manifest.json?cookie=ui%3Dyourcookievalue`);
+    console.log(`\n🔌 Provider API Endpoints available:`);
+    console.log(`   - List providers: http://localhost:${PORT}/api/providers`);
+    console.log(`   - Example: http://localhost:${PORT}/api/streams/moviesdrive/550?type=movie`);
+    console.log(`   - For TV: http://localhost:${PORT}/api/streams/moviesdrive/1399?type=tv&season=1&episode=1`);
 }); 

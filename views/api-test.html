@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuvio Streams API Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        #results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        .error {
+            color: #e74c3c;
+            padding: 15px;
+            background: #fadbd8;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .success {
+            color: #27ae60;
+            padding: 15px;
+            background: #d5f4e6;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .stream-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        .stream-quality {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 16px;
+        }
+        .stream-url {
+            word-break: break-all;
+            color: #666;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        .info-box {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+        .provider-status {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .status-enabled {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+        .status-disabled {
+            background: #fadbd8;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Nuvio Streams API Test</h1>
+        
+        <div class="info-box">
+            <strong>ℹ️ How to use:</strong>
+            <ul>
+                <li>Enter a TMDB ID (e.g., 550 for Fight Club, 1399 for Game of Thrones)</li>
+                <li>Select a provider (only enabled providers will work)</li>
+                <li>Choose content type (movie or TV show)</li>
+                <li>For TV shows, enter season and episode numbers</li>
+            </ul>
+        </div>
+
+        <div class="form-group">
+            <label for="baseUrl">Server URL:</label>
+            <input type="text" id="baseUrl" value="http://localhost:7777" placeholder="http://localhost:7777">
+        </div>
+
+        <div class="form-group">
+            <label for="provider">Provider:</label>
+            <select id="provider">
+                <option value="">-- Loading providers --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="tmdbId">TMDB ID:</label>
+            <input type="text" id="tmdbId" placeholder="e.g., 550 (Fight Club), 1399 (Game of Thrones)" value="550">
+        </div>
+
+        <div class="form-group">
+            <label for="contentType">Content Type:</label>
+            <select id="contentType" onchange="toggleTvFields()">
+                <option value="movie">Movie</option>
+                <option value="tv">TV Show</option>
+            </select>
+        </div>
+
+        <div id="tvFields" style="display: none;">
+            <div class="form-group">
+                <label for="season">Season:</label>
+                <input type="number" id="season" placeholder="e.g., 1" min="1">
+            </div>
+            <div class="form-group">
+                <label for="episode">Episode:</label>
+                <input type="number" id="episode" placeholder="e.g., 1" min="1">
+            </div>
+        </div>
+
+        <button onclick="checkProviders()">🔄 Refresh Providers</button>
+        <button onclick="getStreams()">🎥 Get Streams</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Load providers on page load
+        window.addEventListener('DOMContentLoaded', checkProviders);
+
+        function toggleTvFields() {
+            const type = document.getElementById('contentType').value;
+            document.getElementById('tvFields').style.display = type === 'tv' ? 'block' : 'none';
+        }
+
+        async function checkProviders() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const providerSelect = document.getElementById('provider');
+            
+            providerSelect.innerHTML = '<option value="">-- Loading... --</option>';
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/providers`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    providerSelect.innerHTML = '';
+                    
+                    // Add all providers with status indicators
+                    for (const [id, config] of Object.entries(data.providers)) {
+                        const option = document.createElement('option');
+                        option.value = id;
+                        option.textContent = `${config.name} ${config.enabled ? '✅' : '❌'}`;
+                        option.disabled = !config.enabled;
+                        providerSelect.appendChild(option);
+                    }
+                    
+                    // Select first enabled provider
+                    const firstEnabled = Object.keys(data.enabledProviders)[0];
+                    if (firstEnabled) {
+                        providerSelect.value = firstEnabled;
+                    }
+                    
+                    showResult('success', `Found ${data.totalProviders} providers, ${data.enabledCount} enabled`);
+                } else {
+                    showResult('error', 'Failed to load providers: ' + data.error);
+                }
+            } catch (error) {
+                showResult('error', 'Network error: ' + error.message);
+                providerSelect.innerHTML = '<option value="">-- Error loading providers --</option>';
+            }
+        }
+
+        async function getStreams() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const provider = document.getElementById('provider').value;
+            const tmdbId = document.getElementById('tmdbId').value;
+            const contentType = document.getElementById('contentType').value;
+            const season = document.getElementById('season').value;
+            const episode = document.getElementById('episode').value;
+            
+            if (!provider) {
+                showResult('error', 'Please select a provider');
+                return;
+            }
+            
+            if (!tmdbId) {
+                showResult('error', 'Please enter a TMDB ID');
+                return;
+            }
+            
+            // Build URL
+            let url = `${baseUrl}/api/streams/${provider}/${tmdbId}?type=${contentType}`;
+            if (contentType === 'tv') {
+                if (!season || !episode) {
+                    showResult('error', 'Please enter season and episode for TV shows');
+                    return;
+                }
+                url += `&season=${season}&episode=${episode}`;
+            }
+            
+            showResult('loading', 'Fetching streams...');
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayStreams(data);
+                } else {
+                    showResult('error', `Error: ${data.error}<br>${data.message}`);
+                }
+            } catch (error) {
+                showResult('error', 'Network error: ' + error.message);
+            }
+        }
+
+        function displayStreams(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (data.count === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="success">
+                        <strong>✅ Request successful!</strong><br>
+                        Provider: ${data.provider}<br>
+                        TMDB ID: ${data.tmdbId}<br>
+                        Type: ${data.type}${data.season ? ` S${data.season}E${data.episode}` : ''}<br>
+                        <br>
+                        <strong>No streams found</strong> - This could mean:
+                        <ul>
+                            <li>The content is not available on this provider</li>
+                            <li>The TMDB ID is incorrect</li>
+                            <li>The provider's website may be temporarily unavailable</li>
+                        </ul>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="success">
+                    <strong>✅ Found ${data.count} stream(s)!</strong><br>
+                    Provider: ${data.provider}<br>
+                    TMDB ID: ${data.tmdbId}<br>
+                    Type: ${data.type}${data.season ? ` S${data.season}E${data.episode}` : ''}
+                </div>
+            `;
+            
+            data.streams.forEach((stream, index) => {
+                html += `
+                    <div class="stream-item">
+                        <div class="stream-quality">${index + 1}. Quality: ${stream.quality || 'Unknown'}</div>
+                        ${stream.size ? `<div>Size: ${stream.size}</div>` : ''}
+                        ${stream.title ? `<div>Title: ${stream.title}</div>` : ''}
+                        <div class="stream-url">URL: ${stream.url}</div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function showResult(type, message) {
+            const resultsDiv = document.getElementById('results');
+            if (type === 'loading') {
+                resultsDiv.innerHTML = `<div class="loading">${message}</div>`;
+            } else {
+                resultsDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

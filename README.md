@@ -74,6 +74,7 @@ Nuvio Streams is a powerful Stremio addon that provides direct HTTP streaming li
 ### Key Features
 
 * **🌐 Multiple Sources** - Aggregates direct HTTP streams without P2P
+* **🔌 REST API Endpoints** - Direct provider access via HTTP API (see [API Documentation](API.md))
 * **Personal Cookie Support** - Get your own quota and access to 4K/HDR content
 * **🎯 Quality Filtering** - Set minimum quality requirements
 * **🔒 No P2P/Torrents** - Only direct HTTP streams
@@ -105,6 +106,36 @@ Nuvio Streams is a powerful Stremio addon that provides direct HTTP streaming li
 Self-hosting provides the best experience with full access and personalized performance. For detailed setup and configuration instructions, please refer to our documentation.
 
 **[View the Self-Hosting Guide](https://github.com/tapframe/NuvioStreamsAddon/blob/master/DOCUMENTATION.md)**
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- API DOCUMENTATION -->
+## API Endpoints
+
+Nuvio Streams now provides REST API endpoints for direct access to streaming providers! This allows integration into any website or application.
+
+### Quick Start
+
+```bash
+# List all available providers
+curl http://localhost:7777/api/providers
+
+# Get movie streams (Fight Club)
+curl "http://localhost:7777/api/streams/moviesdrive/550?type=movie"
+
+# Get TV show streams (Game of Thrones S01E01)
+curl "http://localhost:7777/api/streams/moviesdrive/1399?type=tv&season=1&episode=1"
+```
+
+### Features
+
+✅ **Environment-Based Control** - Only enabled providers respond  
+✅ **Browser Compatible** - CORS enabled, JSON responses  
+✅ **Parameter Validation** - Clear error messages  
+✅ **Easy Integration** - Works with any HTTP client  
+
+**📚 Full documentation:** [API.md](API.md)  
+**🧪 Test interface:** Open `http://localhost:7777/api-test.html` in your browser
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
