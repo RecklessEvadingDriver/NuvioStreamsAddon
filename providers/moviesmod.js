@@ -1244,7 +1244,7 @@ async function getMoviesModStreams(tmdbId, mediaType, seasonNum = null, episodeN
                             quality: actualQuality,
                         };
                     } else {
-                        console.warn(`[MoviesMod] Unsupported URL type for final processing: ${currentUrl}`);
+                        console.warn(`[MoviesMod] Unsupported URL type for final processing: ${driveseedRedirectUrl}`);
                         return null;
                     }
                 } catch (e) {
