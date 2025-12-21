@@ -136,6 +136,233 @@ const { getMoviesDriveStreams } = require('./providers/moviesdrive.js'); // Impo
 const { get4KHDHubStreams } = require('./providers/4khdhub.js'); // Import from 4khdhub.js
 const axios = require('axios'); // For external provider requests
 
+// --- Analytics Configuration ---
+const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID;
+const GA_API_SECRET = process.env.GA_API_SECRET;
+const ANALYTICS_ENABLED = GA_MEASUREMENT_ID && GA_API_SECRET;
+
+if (ANALYTICS_ENABLED) {
+    console.log(`[Analytics] GA4 Measurement Protocol is enabled. Tracking to ID: ${GA_MEASUREMENT_ID}`);
+} else {
+    console.log('[Analytics] GA4 Measurement Protocol is disabled. Set GA_MEASUREMENT_ID and GA_API_SECRET to enable.');
+}
+
+// --- Constants ---
+const TMDB_API_URL = 'https://api.themoviedb.org/3';
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+
+const manifest = require('./manifest.json');
+
+// Initialize the addon
+const builder = new addonBuilder(manifest);
+
+// --- Helper Functions ---
+
+// NEW: Helper function to parse quality strings into numerical values
+function parseQuality(qualityString) {
+    if (!qualityString || typeof qualityString !== 'string') {
+        return 0; // Default for unknown or undefined
+    }
+    const q = qualityString.toLowerCase();
+
+    if (q.includes('4k') || q.includes('2160')) return 2160;
+    if (q.includes('1440')) return 1440;
+    if (q.includes('1080')) return 1080;
+    if (q.includes('720')) return 720;
+    if (q.includes('576')) return 576;
+    if (q.includes('480')) return 480;
+    if (q.includes('360')) return 360;
+    if (q.includes('240')) return 240;
+
+    // Handle kbps by extracting number, e.g., "2500k" -> 2.5 (lower than p values)
+    const kbpsMatch = q.match(/(\d+)k/);
+    if (kbpsMatch && kbpsMatch[1]) {
+        return parseInt(kbpsMatch[1], 10) / 1000; // Convert to a small number relative to pixel heights
+    }
+
+    if (q.includes('hd')) return 720; // Generic HD
+    if (q.includes('sd')) return 480; // Generic SD
+
+    // Lower quality tags
+    if (q.includes('cam') || q.includes('camrip')) return 100;
+    if (q.includes('ts') || q.includes('telesync')) return 200;
+    if (q.includes('scr') || q.includes('screener')) return 300;
+    if (q.includes('dvdscr')) return 350;
+    if (q.includes('r5') || q.includes('r6')) return 400;
+
+    if (q.includes('org')) return 4320; // Treat original uploads as higher than 4K
+
+    return 0; // Default for anything else not recognized
+}
+
+// NEW: Helper function to parse size strings into a number (in MB)
+function parseSize(sizeString) {
+    if (!sizeString || typeof sizeString !== 'string') {
+        return 0;
+    }
+    const match = sizeString.match(/([0-9.,]+)\s*(GB|MB|KB)/i);
+    if (!match) {
+        return 0;
+    }
+    const sizeValue = parseFloat(match[1].replace(/,/g, ''));
+    const unit = match[2].toUpperCase();
+    if (unit === 'GB') {
+        return sizeValue * 1024;
+    } else if (unit === 'MB') {
+        return sizeValue;
+    } else if (unit === 'KB') {
+        return sizeValue / 1024;
+    }
+    return 0;
+}
+
+// NEW: Helper function to filter streams by minimum quality
+function filterStreamsByQuality(streams, minQualitySetting, providerName) {
+    if (!minQualitySetting || minQualitySetting.toLowerCase() === 'all') {
+        console.log(`[${providerName}] No minimum quality filter applied (set to 'all' or not specified).`);
+        return streams; // No filtering needed
+    }
+
+    const minQualityNumeric = parseQuality(minQualitySetting);
+    if (minQualityNumeric === 0 && minQualitySetting.toLowerCase() !== 'all') { // Check if minQualitySetting was something unrecognized
+        console.warn(`[${providerName}] Minimum quality setting '${minQualitySetting}' was not recognized. No filtering applied.`);
+        return streams;
+    }
+
+    console.log(`[${providerName}] Filtering streams. Minimum quality: ${minQualitySetting} (Parsed as: ${minQualityNumeric}). Original count: ${streams.length}`);
+
+    const filteredStreams = streams.filter(stream => {
+        const streamQualityNumeric = parseQuality(stream.quality);
+        return streamQualityNumeric >= minQualityNumeric;
+    });
+
+    console.log(`[${providerName}] Filtered count: ${filteredStreams.length}`);
+    return filteredStreams;
+}
+
+// NEW: Helper function to filter streams by excluding specific codecs
+function filterStreamsByCodecs(streams, excludeCodecSettings, providerName) {
+    if (!excludeCodecSettings || Object.keys(excludeCodecSettings).length === 0) {
+        console.log(`[${providerName}] No codec exclusions applied.`);
+        return streams; // No filtering needed
+    }
+
+    const excludeDV = excludeCodecSettings.excludeDV === true;
+    const excludeHDR = excludeCodecSettings.excludeHDR === true;
+
+    if (!excludeDV && !excludeHDR) {
+        console.log(`[${providerName}] No codec exclusions enabled.`);
+        return streams;
+    }
+
+    console.log(`[${providerName}] Filtering streams. Exclude DV: ${excludeDV}, Exclude HDR: ${excludeHDR}. Original count: ${streams.length}`);
+
+    const filteredStreams = streams.filter(stream => {
+        if (!stream.codecs || !Array.isArray(stream.codecs)) {
+            return true; // Keep streams without codec information
+        }
+
+        // Check for DV exclusion
+        if (excludeDV && stream.codecs.includes('DV')) {
+            console.log(`[${providerName}] Excluding stream with DV codec: ${stream.title || stream.url}`);
+            return false;
+        }
+
+        // Check for HDR exclusion (including HDR, HDR10, HDR10+)
+        if (excludeHDR && (stream.codecs.includes('HDR') || stream.codecs.includes('HDR10') || stream.codecs.includes('HDR10+'))) {
+            console.log(`[${providerName}] Excluding stream with HDR codec: ${stream.title || stream.url}`);
+            return false;
+        }
+
+        return true; // Keep the stream
+    });
+
+    console.log(`[${providerName}] After codec filtering count: ${filteredStreams.length}`);
+    return filteredStreams;
+}
+
+// NEW: Helper function that combines both quality and codec filtering
+function applyAllStreamFilters(streams, providerName, minQualitySetting, excludeCodecSettings) {
+    // Apply quality filtering first
+    let filteredStreams = filterStreamsByQuality(streams, minQualitySetting, providerName);
+    // Then apply codec filtering
+    filteredStreams = filterStreamsByCodecs(filteredStreams, excludeCodecSettings, providerName);
+    return filteredStreams;
+}
+
+async function fetchWithRetry(url, options, maxRetries = MAX_RETRIES) {
+    const { default: fetchFunction } = await import('node-fetch'); // Dynamically import
+    let lastError;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const response = await fetchFunction(url, options); // Use the dynamically imported function
+            if (!response.ok) {
+                let errorBody = '';
+                try {
+                    errorBody = await response.text();
+                } catch (e) { /* ignore */ }
+                throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}. Body: ${errorBody.substring(0, 200)}`);
+            }
+            return response;
+        } catch (error) {
+            lastError = error;
+            console.warn(`Fetch attempt ${attempt}/${maxRetries} failed for ${url}: ${error.message}`);
+            if (attempt < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * Math.pow(2, attempt - 1)));
+            }
+        }
+    }
+    console.error(`All fetch attempts failed for ${url}. Last error:`, lastError.message);
+    throw lastError;
+}
+
+// --- NEW: Google Analytics Event Sending Function ---
+async function sendAnalyticsEvent(eventName, eventParams) {
+    if (!ANALYTICS_ENABLED) {
+        return;
+    }
+
+    // Use a dynamically generated client_id for each event to ensure anonymity
+    const clientId = crypto.randomBytes(16).toString("hex");
+
+    const analyticsData = {
+        client_id: clientId,
+        events: [{
+            name: eventName,
+            params: {
+                // GA4 standard parameters for better reporting
+                session_id: crypto.randomBytes(16).toString("hex"),
+                engagement_time_msec: '100',
+                ...eventParams
+            },
+        }],
+    };
+
+    try {
+        const { default: fetchFunction } = await import('node-fetch');
+        // Use a proper timeout and catch any network errors to prevent crashes
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        // Fire-and-forget with proper error handling
+        fetchFunction(`https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`, {
+            method: 'POST',
+            body: JSON.stringify(analyticsData),
+            signal: controller.signal
+        }).catch(err => {
+            console.warn(`[Analytics] Network error sending event: ${err.message}`);
+        }).finally(() => {
+            clearTimeout(timeout);
+        });
+        
+        console.log(`[Analytics] Sent event: ${eventName} for "${eventParams.content_title || 'N/A'}"`);
+    } catch (error) {
+        console.warn(`[Analytics] Failed to send event: ${error.message}`);
+    }
+}
+
 // Helper function for fetching with a timeout
 function fetchWithTimeout(promise, timeoutMs, providerName) {
   return new Promise((resolve) => { // Always resolve to prevent Promise.all from rejecting
