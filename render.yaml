@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: nuvio-streams
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20.19.6
+      - key: NPM_VERSION
+        value: 10.9.0
+    autoDeploy: true
