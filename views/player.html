@@ -409,6 +409,16 @@
                 playerDiv.innerHTML = '';
             }
 
+            // Process the URL based on the hosting service
+            let streamUrl = stream.url;
+            
+            // Transform Pixeldrain URLs to use their API endpoint for direct streaming
+            if (streamUrl.includes('pixeldrain.dev/u/')) {
+                const pixeldrainId = streamUrl.split('/u/')[1];
+                streamUrl = `https://pixeldrain.dev/api/file/${pixeldrainId}`;
+                console.log('Transformed Pixeldrain URL:', streamUrl);
+            }
+
             // Create video element
             const videoElement = document.createElement('video');
             videoElement.id = 'playerjs-video';
@@ -418,10 +428,16 @@
             playerDiv.appendChild(videoElement);
 
             // Initialize PlayerJS
-            playerInstance = new Playerjs({
-                id: 'playerjs-video',
-                file: stream.url
-            });
+            try {
+                playerInstance = new Playerjs({
+                    id: 'playerjs-video',
+                    file: streamUrl
+                });
+                console.log('Player initialized with URL:', streamUrl);
+            } catch (error) {
+                console.error('Player initialization error:', error);
+                alert('Failed to initialize player. Please try another stream.');
+            }
 
             // Scroll to player
             playerContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
