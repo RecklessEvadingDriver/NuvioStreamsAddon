@@ -870,16 +870,22 @@ app.get('/api/providers', (req, res) => {
 
 const PORT = process.env.PORT || 7777;
 
-app.listen(PORT, () => {
-    console.log(`Nuvio Streams Addon landing page available at http://localhost:${PORT}`);
-    // console.log(`Cookie setup page available at http://localhost:${PORT}/setup`); // Removed
-    const manifestUrl = `http://localhost:${PORT}/manifest.json`;
-    console.log(`Default Addon Manifest available at: ${manifestUrl}`);
-    console.log(`To generate a personalized manifest, append ?cookie=YOUR_URL_ENCODED_COOKIE to the manifest URL.`);
-    console.log(`Example: http://localhost:${PORT}/manifest.json?cookie=ui%3Dyourcookievalue`);
-    console.log(`Install example: stremio://localhost:${PORT}/manifest.json?cookie=ui%3Dyourcookievalue`);
-    console.log(`\n🔌 Provider API Endpoints available:`);
-    console.log(`   - List providers: http://localhost:${PORT}/api/providers`);
-    console.log(`   - Example: http://localhost:${PORT}/api/streams/moviesdrive/550?type=movie`);
-    console.log(`   - For TV: http://localhost:${PORT}/api/streams/moviesdrive/1399?type=tv&season=1&episode=1`);
-}); 
+// Only start server if not in serverless environment
+if (!process.env.VERCEL && !process.env.NETLIFY && !process.env.RAILWAY_ENVIRONMENT && !process.env.RENDER) {
+    app.listen(PORT, () => {
+        console.log(`Nuvio Streams Addon landing page available at http://localhost:${PORT}`);
+        // console.log(`Cookie setup page available at http://localhost:${PORT}/setup`); // Removed
+        const manifestUrl = `http://localhost:${PORT}/manifest.json`;
+        console.log(`Default Addon Manifest available at: ${manifestUrl}`);
+        console.log(`To generate a personalized manifest, append ?cookie=YOUR_URL_ENCODED_COOKIE to the manifest URL.`);
+        console.log(`Example: http://localhost:${PORT}/manifest.json?cookie=ui%3Dyourcookievalue`);
+        console.log(`Install example: stremio://localhost:${PORT}/manifest.json?cookie=ui%3Dyourcookievalue`);
+        console.log(`\n🔌 Provider API Endpoints available:`);
+        console.log(`   - List providers: http://localhost:${PORT}/api/providers`);
+        console.log(`   - Example: http://localhost:${PORT}/api/streams/moviesdrive/550?type=movie`);
+        console.log(`   - For TV: http://localhost:${PORT}/api/streams/moviesdrive/1399?type=tv&season=1&episode=1`);
+    });
+}
+
+// Export for serverless environments
+module.exports = app; 

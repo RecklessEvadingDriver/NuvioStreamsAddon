@@ -1,0 +1,23 @@
+[build]
+  command = "npm install"
+  publish = "."
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server/:splat"
+  status = 200
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["express"]
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "*"

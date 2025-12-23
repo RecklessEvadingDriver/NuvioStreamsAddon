@@ -2,6 +2,7 @@ node_modules
 
 package-lock.json 
 .vercel
+.netlify
 
 reddit_post.md
 reddit_post_title.md

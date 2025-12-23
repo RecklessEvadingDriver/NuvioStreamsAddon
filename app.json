@@ -1,0 +1,42 @@
+{
+  "name": "Nuvio Streams",
+  "description": "Netflix-style streaming platform addon for Stremio with MoviesDrive and 4KHDHub providers",
+  "repository": "https://github.com/RecklessEvadingDriver/NuvioStreamsAddon",
+  "logo": "https://raw.githubusercontent.com/RecklessEvadingDriver/NuvioStreamsAddon/main/static/logo.png",
+  "keywords": ["stremio", "streaming", "addon", "movies", "tv-shows", "netflix"],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "description": "Node environment",
+      "value": "production"
+    },
+    "TMDB_API_KEY": {
+      "description": "TMDB API Key (optional - for content metadata)",
+      "required": false
+    },
+    "ENABLE_MOVIESDRIVE_PROVIDER": {
+      "description": "Enable MoviesDrive provider",
+      "value": "true"
+    },
+    "ENABLE_4KHDHUB_PROVIDER": {
+      "description": "Enable 4KHDHub provider",
+      "value": "true"
+    },
+    "USE_REDIS_CACHE": {
+      "description": "Enable Redis caching",
+      "value": "false",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "eco"
+    }
+  },
+  "addons": []
+}
