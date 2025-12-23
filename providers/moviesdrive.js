@@ -338,11 +338,15 @@ function extractHubCloudLinks(url, title, callback) {
                         }
                     }, false);
                 } else if (buttonHref.includes('pixeldra')) {
-                    // Convert Pixeldrain URL to API format
+                    // Convert Pixeldrain URL to user-facing format (not API format)
                     let finalPixeldrainUrl = buttonHref;
                     if (buttonHref && buttonHref.includes('pixeldrain.net/u/')) {
                         const fileId = buttonHref.split('/u/')[1];
-                        finalPixeldrainUrl = `https://pixeldrain.dev/api/file/${fileId}?download`;
+                        // Use the user-facing URL format as shown in problem statement
+                        finalPixeldrainUrl = `https://pixeldrain.dev/u/${fileId}`;
+                    } else if (buttonHref && buttonHref.includes('pixeldrain.dev/u/')) {
+                        // Already in correct format
+                        finalPixeldrainUrl = buttonHref;
                     }
                     processButton(finalPixeldrainUrl, 'Pixeldrain');
                 } else if (buttonText.includes('Download [Server : 10Gbps]')) {
