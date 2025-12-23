@@ -948,22 +948,19 @@ function convertToStremioFormat(links, mediaType) {
 
         // Normalize source name for display
         let displaySource = link.source || 'Unknown';
-        // Map internal source names to display names
+        // Map internal source names to display names (only map those that need transformation)
         const sourceMap = {
             'HubCloud[FSL Server]': 'HubCloud FSL Server',
             'HubCloud[BuzzServer]': 'HubCloud BuzzServer',
-            'HubCloud': 'HubCloud',
-            'GDFlix[Direct]': 'GDFlix Direct',
-            'GDFlix[Cloud Download]': 'GDFlix[Cloud Download]',
-            'GDFlix[Instant Download]': 'GDFlix[Instant Download]',
-            'GDFlix': 'GDFlix',
-            'Pixeldrain': 'Pixeldrain',
-            'GDLink': 'GDLink'
+            'GDFlix[Direct]': 'GDFlix Direct'
+            // Note: GDFlix[Cloud Download], GDFlix[Instant Download], Pixeldrain, HubCloud, GDFlix, GDLink 
+            // are kept as-is (no transformation needed)
         };
         displaySource = sourceMap[displaySource] || displaySource;
 
         // Create name in format: "MoviesDrive (Source) - Quality"
         let name = `MoviesDrive`;
+        // Only add source in parentheses if it's valid and not the provider name itself
         if (displaySource && displaySource !== 'Unknown' && displaySource !== 'MoviesDrive') {
             name += ` (${displaySource})`;
         }
