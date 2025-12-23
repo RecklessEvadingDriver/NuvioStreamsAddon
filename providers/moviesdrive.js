@@ -952,7 +952,7 @@ function convertToStremioFormat(links, mediaType) {
         const sourceMap = {
             'HubCloud[FSL Server]': 'HubCloud FSL Server',
             'HubCloud[BuzzServer]': 'HubCloud BuzzServer',
-            'GDFlix[Direct]': 'GDFlix Direct'
+            'GDFlix[Direct]': 'GDFlix Direct',
             // Note: GDFlix[Cloud Download], GDFlix[Instant Download], Pixeldrain, HubCloud, GDFlix, GDLink 
             // are kept as-is (no transformation needed)
         };
