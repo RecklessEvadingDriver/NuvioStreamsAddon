@@ -39,16 +39,21 @@ app.use(express.json()); // Middleware to parse JSON bodies, needed for /api/val
 // REMOVE: bodyParser.json() if no other routes need it.
 // app.use(bodyParser.json());
 
-// Serve static files from the 'views' directory (for the landing page)
-app.use(express.static(path.join(__dirname, 'views')));
-
-// Serve static files from the 'static' directory (for videos, images, etc.)
-app.use('/static', express.static(path.join(__dirname, 'static')));
+// Home route - serve browse page (must be before static middleware)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'browse.html'));
+});
 
 // Configure route - handles both direct access and path-based parametrized access
 app.get('*configure', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
+
+// Serve static files from the 'views' directory (for the landing page)
+app.use(express.static(path.join(__dirname, 'views')));
+
+// Serve static files from the 'static' directory (for videos, images, etc.)
+app.use('/static', express.static(path.join(__dirname, 'static')));
 
 // Middleware to extract user-supplied cookie, region, and providers from request query
 // and make them available in a request-scoped context (isolated per request)

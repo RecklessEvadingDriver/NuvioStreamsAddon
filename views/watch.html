@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watch - Nuvio Streams</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #141414;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #141414;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #e50914;
+            cursor: pointer;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding-top: 80px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-left: 50px;
+            padding-right: 50px;
+        }
+
+        /* Video Player Container */
+        .player-container {
+            margin-bottom: 30px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #player {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+        }
+
+        /* Server Selection */
+        .server-selection {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .server-btn {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .server-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .server-btn.active {
+            background: #e50914;
+            border-color: #e50914;
+        }
+
+        /* Quality Selection */
+        .quality-selection {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .quality-btn {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .quality-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .quality-btn.active {
+            background: rgba(255,255,255,0.2);
+            border-color: #fff;
+        }
+
+        /* Details Section */
+        .details-section {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .poster-container img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .info-container h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .meta-info {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .synopsis {
+            margin-bottom: 20px;
+        }
+
+        .synopsis h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #e5e5e5;
+        }
+
+        .synopsis p {
+            line-height: 1.6;
+            color: #b3b3b3;
+        }
+
+        .genres {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .genre-tag {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        /* Season/Episode Selector for TV Shows */
+        .episode-selector {
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .episode-selector.show {
+            display: block;
+        }
+
+        .episode-selector h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .season-select, .episode-select {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #333;
+            border-top: 4px solid #e50914;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error Message */
+        .error-message {
+            background: rgba(229, 9, 20, 0.1);
+            border: 1px solid #e50914;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .main-content {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            .details-section {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo" onclick="window.location.href='/browse.html'">NUVIO</div>
+        <button class="back-btn" onclick="window.location.href='/browse.html'">← Back to Browse</button>
+    </div>
+
+    <div class="main-content">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="content" style="display: none;">
+            <div class="player-container">
+                <div id="player"></div>
+            </div>
+
+            <div class="server-selection">
+                <button class="server-btn active" data-provider="moviesdrive" onclick="selectServer(this, 'moviesdrive')">
+                    Server 1 (MoviesDrive)
+                </button>
+                <button class="server-btn" data-provider="4khdhub" onclick="selectServer(this, '4khdhub')">
+                    Server 2 (4KHDHub)
+                </button>
+            </div>
+
+            <div class="quality-selection" id="qualitySelection"></div>
+
+            <div class="episode-selector" id="episodeSelector">
+                <h3>Select Episode</h3>
+                <select class="season-select" id="seasonSelect" onchange="updateEpisodes()"></select>
+                <select class="episode-select" id="episodeSelect" onchange="loadStreams()"></select>
+            </div>
+
+            <div id="errorMessage" style="display: none;" class="error-message"></div>
+
+            <div class="details-section">
+                <div class="poster-container">
+                    <img id="poster" src="" alt="Poster">
+                </div>
+                <div class="info-container">
+                    <h1 id="title"></h1>
+                    <div class="meta-info">
+                        <div class="meta-item">
+                            <span>⭐</span>
+                            <span id="rating"></span>
+                        </div>
+                        <div class="meta-item" id="year"></div>
+                        <div class="meta-item" id="runtime"></div>
+                    </div>
+                    <div class="synopsis">
+                        <h3>Synopsis</h3>
+                        <p id="overview"></p>
+                    </div>
+                    <div class="genres" id="genres"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PlayerJS Library -->
+    <script src="https://recklessevadingdriver.github.io/Player/playerjs.js"></script>
+
+    <script>
+        const TMDB_API_KEY = '9a16b3ee732dbceafb668cf0043791b2';
+        const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+        const TMDB_BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
+
+        let currentProvider = 'moviesdrive';
+        let currentQuality = '1080p';
+        let currentStreams = [];
+        let playerInstance = null;
+        let contentData = null;
+
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const contentId = urlParams.get('id');
+        const contentType = urlParams.get('type');
+
+        if (!contentId || !contentType) {
+            window.location.href = '/browse.html';
+        }
+
+        async function fetchTMDB(endpoint) {
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3${endpoint}?api_key=${TMDB_API_KEY}`);
+                return await response.json();
+            } catch (error) {
+                console.error('TMDB API Error:', error);
+                return null;
+            }
+        }
+
+        async function loadDetails() {
+            const data = await fetchTMDB(`/${contentType}/${contentId}`);
+            if (!data) {
+                showError('Failed to load content details');
+                return;
+            }
+
+            contentData = data;
+
+            // Set poster
+            document.getElementById('poster').src = data.poster_path 
+                ? `${TMDB_IMAGE_BASE}${data.poster_path}` 
+                : 'https://via.placeholder.com/300x450?text=No+Image';
+
+            // Set title
+            document.getElementById('title').textContent = data.title || data.name;
+
+            // Set rating
+            document.getElementById('rating').textContent = data.vote_average 
+                ? data.vote_average.toFixed(1) 
+                : 'N/A';
+
+            // Set year
+            const year = (data.release_date || data.first_air_date || '').split('-')[0];
+            document.getElementById('year').textContent = year;
+
+            // Set runtime
+            if (data.runtime) {
+                const hours = Math.floor(data.runtime / 60);
+                const minutes = data.runtime % 60;
+                document.getElementById('runtime').textContent = `${hours}h ${minutes}m`;
+            } else if (data.episode_run_time && data.episode_run_time.length > 0) {
+                document.getElementById('runtime').textContent = `${data.episode_run_time[0]}m per episode`;
+            }
+
+            // Set overview
+            document.getElementById('overview').textContent = data.overview || 'No synopsis available.';
+
+            // Set genres
+            const genresContainer = document.getElementById('genres');
+            if (data.genres && data.genres.length > 0) {
+                data.genres.forEach(genre => {
+                    const tag = document.createElement('span');
+                    tag.className = 'genre-tag';
+                    tag.textContent = genre.name;
+                    genresContainer.appendChild(tag);
+                });
+            }
+
+            // Handle TV shows - load seasons
+            if (contentType === 'tv') {
+                await loadSeasons();
+            } else {
+                // For movies, load streams directly
+                await loadStreams();
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+        }
+
+        async function loadSeasons() {
+            const seasonSelect = document.getElementById('seasonSelect');
+            const episodeSelector = document.getElementById('episodeSelector');
+            
+            if (contentData.seasons && contentData.seasons.length > 0) {
+                episodeSelector.classList.add('show');
+                
+                // Filter out season 0 (specials)
+                const validSeasons = contentData.seasons.filter(s => s.season_number > 0);
+                
+                validSeasons.forEach(season => {
+                    const option = document.createElement('option');
+                    option.value = season.season_number;
+                    option.textContent = `Season ${season.season_number}`;
+                    seasonSelect.appendChild(option);
+                });
+
+                // Load first season by default
+                if (validSeasons.length > 0) {
+                    await updateEpisodes();
+                }
+            }
+        }
+
+        async function updateEpisodes() {
+            const seasonNumber = document.getElementById('seasonSelect').value;
+            const episodeSelect = document.getElementById('episodeSelect');
+            episodeSelect.innerHTML = '';
+
+            const seasonData = await fetchTMDB(`/tv/${contentId}/season/${seasonNumber}`);
+            
+            if (seasonData && seasonData.episodes) {
+                seasonData.episodes.forEach(episode => {
+                    const option = document.createElement('option');
+                    option.value = episode.episode_number;
+                    option.textContent = `Episode ${episode.episode_number}: ${episode.name}`;
+                    episodeSelect.appendChild(option);
+                });
+
+                await loadStreams();
+            }
+        }
+
+        async function loadStreams() {
+            showError('', false);
+            
+            let apiUrl = `/api/streams/${currentProvider}/${contentId}?type=${contentType}`;
+            
+            if (contentType === 'tv') {
+                const season = document.getElementById('seasonSelect').value;
+                const episode = document.getElementById('episodeSelect').value;
+                apiUrl += `&season=${season}&episode=${episode}`;
+            }
+
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (!data.success || !data.streams || data.streams.length === 0) {
+                    showError('No streams available for this content from the selected server.');
+                    currentStreams = [];
+                    updateQualitySelection();
+                    return;
+                }
+
+                currentStreams = data.streams;
+                updateQualitySelection();
+
+                // Auto-select 1080p or first available quality
+                const preferred = currentStreams.find(s => 
+                    s.quality && (s.quality.includes('1080') || s.quality === '1080p')
+                );
+                
+                if (preferred) {
+                    playStream(preferred);
+                } else if (currentStreams.length > 0) {
+                    playStream(currentStreams[0]);
+                }
+
+            } catch (error) {
+                console.error('Stream loading error:', error);
+                showError('Failed to load streams. Please try another server.');
+                currentStreams = [];
+                updateQualitySelection();
+            }
+        }
+
+        function updateQualitySelection() {
+            const container = document.getElementById('qualitySelection');
+            container.innerHTML = '';
+
+            if (currentStreams.length === 0) {
+                return;
+            }
+
+            // Extract unique qualities
+            const qualities = [...new Set(currentStreams.map(s => s.quality || 'Unknown'))];
+
+            qualities.forEach((quality, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'quality-btn';
+                btn.textContent = quality;
+                btn.onclick = () => selectQuality(btn, quality);
+
+                // Auto-select 1080p or first quality
+                if ((quality.includes('1080') || quality === '1080p') || index === 0) {
+                    btn.classList.add('active');
+                    currentQuality = quality;
+                }
+
+                container.appendChild(btn);
+            });
+        }
+
+        function selectQuality(button, quality) {
+            document.querySelectorAll('.quality-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            currentQuality = quality;
+
+            // Find and play stream with selected quality
+            const stream = currentStreams.find(s => s.quality === quality);
+            if (stream) {
+                playStream(stream);
+            }
+        }
+
+        function selectServer(button, provider) {
+            document.querySelectorAll('.server-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            currentProvider = provider;
+            loadStreams();
+        }
+
+        function playStream(stream) {
+            const playerDiv = document.getElementById('player');
+            
+            // Clear existing player
+            if (playerInstance) {
+                playerDiv.innerHTML = '';
+            }
+
+            // Create video element
+            const videoElement = document.createElement('video');
+            videoElement.id = 'playerjs-video';
+            videoElement.controls = true;
+            videoElement.style.width = '100%';
+            videoElement.style.height = '100%';
+            playerDiv.appendChild(videoElement);
+
+            // Initialize PlayerJS
+            try {
+                playerInstance = new Playerjs({
+                    id: 'playerjs-video',
+                    file: stream.url
+                });
+            } catch (error) {
+                console.error('Player error:', error);
+                showError('Failed to initialize player. The stream URL may be invalid.');
+            }
+        }
+
+        function showError(message, show = true) {
+            const errorDiv = document.getElementById('errorMessage');
+            if (show && message) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        }
+
+        // Load content on page load
+        loadDetails();
+    </script>
+</body>
+</html>
