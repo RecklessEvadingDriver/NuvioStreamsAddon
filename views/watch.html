@@ -577,9 +577,13 @@
             
             // Transform Pixeldrain URLs to use their API endpoint for direct streaming
             if (streamUrl.includes('pixeldrain.dev/u/')) {
-                const pixeldrainId = streamUrl.split('/u/')[1];
-                streamUrl = `https://pixeldrain.dev/api/file/${pixeldrainId}`;
-                console.log('Transformed Pixeldrain URL:', streamUrl);
+                // Extract just the ID, handling query parameters and fragments
+                const match = streamUrl.match(/pixeldrain\.dev\/u\/([^?&#]+)/);
+                if (match && match[1]) {
+                    const pixeldrainId = match[1];
+                    streamUrl = `https://pixeldrain.dev/api/file/${pixeldrainId}`;
+                    console.log('Transformed Pixeldrain URL:', streamUrl);
+                }
             }
 
             // Create video element
@@ -597,7 +601,8 @@
                     file: streamUrl
                 });
                 console.log('Player initialized with URL:', streamUrl);
-                showError('', false); // Clear any previous errors
+                // Clear any previous errors
+                showError('', false);
             } catch (error) {
                 console.error('Player error:', error);
                 showError('Failed to initialize player. The stream URL may be invalid.');
