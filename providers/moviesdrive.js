@@ -942,23 +942,40 @@ function convertToStremioFormat(links, mediaType) {
             }
         }
 
-        // Create name with source and quality info (without size)
+        // Normalize source name for display
+        let displaySource = link.source || 'Unknown';
+        // Map internal source names to display names
+        const sourceMap = {
+            'HubCloud[FSL Server]': 'HubCloud FSL Server',
+            'HubCloud[BuzzServer]': 'HubCloud BuzzServer',
+            'HubCloud': 'HubCloud',
+            'GDFlix[Direct]': 'GDFlix Direct',
+            'GDFlix[Cloud Download]': 'GDFlix[Cloud Download]',
+            'GDFlix[Instant Download]': 'GDFlix[Instant Download]',
+            'GDFlix': 'GDFlix',
+            'Pixeldrain': 'Pixeldrain',
+            'GDLink': 'GDLink'
+        };
+        displaySource = sourceMap[displaySource] || displaySource;
+
+        // Create name in format: "MoviesDrive (Source) - Quality"
         let name = `MoviesDrive`;
-        if (link.source && link.source !== 'Unknown') {
-            name += ` (${link.source})`;
+        if (displaySource && displaySource !== 'Unknown' && displaySource !== 'MoviesDrive') {
+            name += ` (${displaySource})`;
         }
         if (quality !== 'Unknown') {
             name += ` - ${quality}`;
         }
 
-        // Create title with current details and filename
-        let title = link.title || 'MoviesDrive Stream';
+        // Create title in format: "MoviesDrive Stream\nSize\nFilename"
+        let titleParts = ['MoviesDrive Stream'];
         if (link.size && link.size !== 'Unknown') {
-            title += `\n${link.size}`;
+            titleParts.push(link.size);
         }
         if (link.fileName) {
-            title += `\n${link.fileName}`;
+            titleParts.push(link.fileName);
         }
+        const title = titleParts.join('\n');
 
         return {
             name: name,
