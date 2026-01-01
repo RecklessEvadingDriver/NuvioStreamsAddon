@@ -338,11 +338,15 @@ function extractHubCloudLinks(url, title, callback) {
                         }
                     }, false);
                 } else if (buttonHref.includes('pixeldra')) {
-                    // Convert Pixeldrain URL to API format
+                    // Convert Pixeldrain URL to user-facing format (not API format)
                     let finalPixeldrainUrl = buttonHref;
                     if (buttonHref && buttonHref.includes('pixeldrain.net/u/')) {
                         const fileId = buttonHref.split('/u/')[1];
-                        finalPixeldrainUrl = `https://pixeldrain.dev/api/file/${fileId}?download`;
+                        // Use the user-facing URL format as shown in problem statement
+                        finalPixeldrainUrl = `https://pixeldrain.dev/u/${fileId}`;
+                    } else if (buttonHref && buttonHref.includes('pixeldrain.dev/u/')) {
+                        // Already in correct format
+                        finalPixeldrainUrl = buttonHref;
                     }
                     processButton(finalPixeldrainUrl, 'Pixeldrain');
                 } else if (buttonText.includes('Download [Server : 10Gbps]')) {
@@ -942,23 +946,37 @@ function convertToStremioFormat(links, mediaType) {
             }
         }
 
-        // Create name with source and quality info (without size)
+        // Normalize source name for display
+        let displaySource = link.source || 'Unknown';
+        // Map internal source names to display names (only map those that need transformation)
+        const sourceMap = {
+            'HubCloud[FSL Server]': 'HubCloud FSL Server',
+            'HubCloud[BuzzServer]': 'HubCloud BuzzServer',
+            'GDFlix[Direct]': 'GDFlix Direct',
+            // Note: GDFlix[Cloud Download], GDFlix[Instant Download], Pixeldrain, HubCloud, GDFlix, GDLink 
+            // are kept as-is (no transformation needed)
+        };
+        displaySource = sourceMap[displaySource] || displaySource;
+
+        // Create name in format: "MoviesDrive (Source) - Quality"
         let name = `MoviesDrive`;
-        if (link.source && link.source !== 'Unknown') {
-            name += ` (${link.source})`;
+        // Only add source in parentheses if it's valid and not the provider name itself
+        if (displaySource && displaySource !== 'Unknown' && displaySource !== 'MoviesDrive') {
+            name += ` (${displaySource})`;
         }
         if (quality !== 'Unknown') {
             name += ` - ${quality}`;
         }
 
-        // Create title with current details and filename
-        let title = link.title || 'MoviesDrive Stream';
+        // Create title in format: "MoviesDrive Stream\nSize\nFilename"
+        let titleParts = ['MoviesDrive Stream'];
         if (link.size && link.size !== 'Unknown') {
-            title += `\n${link.size}`;
+            titleParts.push(link.size);
         }
         if (link.fileName) {
-            title += `\n${link.fileName}`;
+            titleParts.push(link.fileName);
         }
+        const title = titleParts.join('\n');
 
         return {
             name: name,
